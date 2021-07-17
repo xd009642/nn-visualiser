@@ -60,21 +60,22 @@ fn generate_graph(nn_graph: &TfGraph) -> Graph<Node, Edge> {
             graph.add_edge(*in_idx, node_idx, edge);
         }
         for i in 0..op.num_outputs() {
-            let (output, idx) = op.input(i);
-            let out_node = Node::from_operation(&output);
-            if nodes.contains_key(&out_node) {
-                continue;
-            }
-            let out_idx = nodes
-                .entry(out_node.clone())
-                .or_insert_with(|| graph.add_node(out_node.clone()));
+            for (output, idx) in op.output_consumers(i).iter() {
+                let out_node = Node::from_operation(&output);
+                if nodes.contains_key(&out_node) {
+                    continue;
+                }
+                let out_idx = nodes
+                    .entry(out_node.clone())
+                    .or_insert_with(|| graph.add_node(out_node.clone()));
 
-            let edge = Edge {
-                dim: vec![],
-                input_index: idx,
-                output_index: i,
-            };
-            graph.add_edge(*out_idx, node_idx, edge);
+                let edge = Edge {
+                    dim: vec![],
+                    input_index: *idx,
+                    output_index: i,
+                };
+                graph.add_edge(*out_idx, node_idx, edge);
+            }
         }
     }
     graph
@@ -84,13 +85,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::from_args();
 
     let input = fs::read(&config.input)?;
-
+    
     let mut graph = TfGraph::new();
     graph.import_graph_def(&input, &ImportGraphDefOptions::new())?;
-
     let graph = generate_graph(&graph);
-
-    let dot = Dot::new(graph);
+    let dot = Dot::new(&graph);
 
     println!("{:?}", dot);
 
