@@ -2,6 +2,7 @@ use petgraph::dot::Dot;
 use petgraph::graph::{Graph, NodeIndex};
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tensorflow::{Graph as TfGraph, ImportGraphDefOptions, Operation};
@@ -13,7 +14,7 @@ pub struct Config {
     input: PathBuf,
     /// Save rendered output here
     #[structopt(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -99,7 +100,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let graph = generate_graph(&graph);
     let dot = Dot::new(&graph);
 
-    println!("{:?}", dot);
+    if let Some(o) = config.output {
+        let mut file = fs::File::create(o)?;
+        file.write_all(format!("{:?}", dot).as_bytes())?;
+    } else {
+        println!("{:?}", dot);
+    }
 
     Ok(())
 }
