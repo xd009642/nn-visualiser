@@ -18,13 +18,13 @@ pub struct Config {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Node {
-    name: String,
+    name: PathBuf,
     ty: String,
 }
 
 impl Node {
     fn from_operation(op: &Operation) -> Self {
-        let name = op.name().expect("Op name not valid unicode");
+        let name = PathBuf::from(op.name().expect("Op name not valid unicode"));
         let ty = op.op_type().expect("Op type not valid unicode");
         Self { name, ty }
     }
